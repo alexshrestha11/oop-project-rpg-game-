@@ -1,59 +1,289 @@
-# The Dark Arena
+# The Dark Arena ⚔️
 
-A turn-based console RPG written in C++ where memorization and pattern recognition matter more than raw stats. Choose a class, fight four enemies in sequence, and figure out — through trial, error, and careful observation — the exact hidden sequence of moves each enemy demands. Guess wrong, and it's instant death.
+A console-based C++ battle game built using Object-Oriented Programming (OOP) concepts.
 
-## Concept
+In **The Dark Arena**, the player chooses between a **Warrior** and a **Mage** and fights through four increasingly difficult enemies. The key mechanic is a hidden sequence of moves: choosing the correct action keeps the battle going, while one wrong move results in an instant critical-hit death.
 
-There are no hints, no tutorials, and no visible clues. Every enemy has a fixed, secret pattern of required actions (**B**asic Attack, **F**inal Attack, **H**eal) that you must reproduce turn-by-turn to win. Deviate from the pattern even once and the enemy punishes you with a one-hit kill.
+## 🎮 Game Features
 
-This turns a simple battler into a memory/deduction puzzle: you'll likely die a few times per enemy while you piece the sequence together, then execute it flawlessly on a later attempt.
+- Choose between **Warrior** and **Mage**
+- Four levels of combat:
+  - Goblin
+  - Orc
+  - Minotaur
+  - Dragon
+- Three player actions:
+  - Basic Attack
+  - Final Attack
+  - Heal
+- Hidden attack patterns that must be memorized
+- Different patterns for Warrior and Mage
+- Wrong move results in an **instant death**
+- Health recovery between levels
+- Console-based battle/status display
+- Input validation for invalid numeric input
 
-## Features
+## 🧙 Character Classes
 
-- **Two playable classes** with different stats and abilities:
-  - **Warrior** — high HP tank (700 HP), moderate damage
-  - **Mage** — glass cannon (400 HP), devastating Final Attack
-- **Ability gating system** — Basic Attack unlocks both Final Attack and Heal; using Final locks both again, while Heal only locks itself
-- **Four escalating enemies** — Goblin, Orc, Minotaur, and Dragon, each with a unique required move pattern per class
-- **Permadeath mechanic** — one wrong move triggers an instant critical kill
-- **Partial recovery between levels** — heal a portion of max HP after clearing each stage
-- **Polymorphic character system** — shared `Character` base class with `Player` and `Enemy` hierarchies, built with virtual functions and `unique_ptr` for clean memory management
+### Warrior
 
-## How to Play
+| Attribute | Value |
+|---|---:|
+| HP | 700 |
+| Basic Damage | 40 |
+| Final Damage | 120 |
+| Heal | 100 |
+| Basic Attack | Sword Slash |
+| Final Attack | Berserker's Wrath |
 
-1. Choose your class (Warrior or Mage) and name your character.
-2. Each turn, pick one of three actions:
-   - `1` — Basic Attack (always available)
-   - `2` — Final Attack (only after Basic Attack)
-   - `3` — Heal (only after Basic Attack)
-3. There's no indicator for which move is "correct" — you have to learn the pattern by observing what happens.
-4. A correct move damages the enemy (or heals you) and the enemy counterattacks. A wrong move ends the run immediately.
-5. Clear all four enemies to win the game.
+### Mage
 
-## Building
+| Attribute | Value |
+|---|---:|
+| HP | 400 |
+| Basic Damage | 55 |
+| Final Damage | 220 |
+| Heal | 100 |
+| Basic Attack | Arcane Bolt |
+| Final Attack | Meteor Storm |
 
-Requires a C++ compiler with C++11 support or later.
+## ⚔️ Battle System
 
-```bash
-g++ -std=c++11 -o dark_arena main.cpp
-./dark_arena
+The game uses three possible moves:
+
+| Move | Description |
+|---|---|
+| **Basic Attack** | Always available and unlocks Final Attack + Heal |
+| **Final Attack** | Deals high damage and locks Final Attack + Heal |
+| **Heal** | Restores HP and becomes locked after use |
+
+After a **Final Attack**, the player must use a **Basic Attack** next.
+
+The enemy's required move pattern is hidden from the player. The player must remember and follow the correct sequence.
+
+> **ONE WRONG MOVE = INSTANT DEATH**
+
+## 👹 Enemies
+
+### Warrior Route
+
+| Level | Enemy | HP | Attack Damage |
+|---|---|---:|---:|
+| 1 | Goblin | 320 | 25 |
+| 2 | Orc | 320 | 30 |
+| 3 | Minotaur | 480 | 35 |
+| 4 | Dragon | 640 | 40 |
+
+### Mage Route
+
+| Level | Enemy | HP | Attack Damage |
+|---|---|---:|---:|
+| 1 | Goblin | 275 | 20 |
+| 2 | Orc | 550 | 25 |
+| 3 | Minotaur | 605 | 30 |
+| 4 | Dragon | 880 | 30 |
+
+## 🧠 Hidden Move Patterns
+
+The game internally stores the required sequence for each level and character class.
+
+- `B` = Basic Attack
+- `H` = Heal
+- `F` = Final Attack
+
+The player is **not shown the pattern** during the battle.
+
+The patterns are designed so that following the correct sequence allows the player to defeat each enemy exactly.
+
+## 🏗️ OOP Concepts Used
+
+This project demonstrates several important C++ Object-Oriented Programming concepts.
+
+### 1. Classes and Objects
+
+The game is organized into classes such as:
+
+- `Character`
+- `Player`
+- `Warrior`
+- `Mage`
+- `Enemy`
+- `Arena`
+
+### 2. Inheritance
+
+`Player` inherits from `Character`.
+
+`Warrior` and `Mage` inherit from `Player`.
+
+`Enemy` also inherits from `Character`.
+
+This creates a clear class hierarchy for the game characters.
+
+### 3. Encapsulation
+
+Important character data such as health, damage values, attack names, and ability states are stored inside classes with appropriate access control.
+
+### 4. Abstraction
+
+The `Player` class provides common functionality for different player types, while `Warrior` and `Mage` provide their specific roles and statistics.
+
+### 5. Polymorphism
+
+The `getRole()` function is declared as a pure virtual function in `Player` and implemented differently by `Warrior` and `Mage`.
+
+```cpp
+virtual string getRole() = 0;
 ```
 
-## Project Structure
+### 6. Virtual Destructor
 
+The base `Character` class contains a virtual destructor:
+
+```cpp
+virtual ~Character() {}
 ```
-.
-├── main.cpp     # Full game source (classes, arena logic, main loop)
+
+This supports safe destruction through base-class references/pointers.
+
+### 7. Smart Pointers
+
+The project uses `unique_ptr` to manage dynamically created player and enemy objects.
+
+```cpp
+unique_ptr<Player>
+unique_ptr<Enemy>
+```
+
+### 8. STL Containers
+
+A `vector` is used to store the enemies:
+
+```cpp
+vector<unique_ptr<Enemy>> enemies;
+```
+
+## 📂 Project Structure
+
+```text
+The-Dark-Arena/
+│
+├── oopfinalgame.cpp
 └── README.md
 ```
 
-## Class Overview
+## 💻 Requirements
 
-| Class    | HP  | Basic Attack | Final Attack | Heal |
-|----------|-----|---------------|---------------|------|
-| Warrior  | 700 | 40            | 120           | 100  |
-| Mage     | 400 | 55            | 220           | 100  |
+To compile and run the project, you need:
 
-## License
+- A C++ compiler
+- C++11 or newer
+- A terminal/console
 
-Feel free to fork, modify, and expand this project. Consider adding a license file (e.g. MIT) if you plan to share or accept contributions.
+The program uses standard C++ libraries including:
+
+```cpp
+#include <iostream>
+#include <string>
+#include <vector>
+#include <memory>
+#include <limits>
+```
+
+## 🔨 Compilation
+
+Using **g++**:
+
+```bash
+g++ oopfinalgame.cpp -o dark_arena
+```
+
+Then run:
+
+### Windows
+
+```bash
+dark_arena.exe
+```
+
+### Linux / macOS
+
+```bash
+./dark_arena
+```
+
+## ▶️ How to Play
+
+1. Start the program.
+2. Read the game rules.
+3. Choose:
+   - `1` for Warrior
+   - `2` for Mage
+4. Enter your character name.
+5. Enter each battle.
+6. Observe the available actions and remember the correct sequence.
+7. Select the correct move.
+8. Defeat all four enemies.
+9. Recover some HP between levels.
+10. Defeat the Dragon to achieve **VICTORY**.
+
+## ❤️ Health System
+
+The player's health is reduced whenever an enemy successfully attacks.
+
+The player can use the Heal ability when it is unlocked.
+
+After each completed level, the player automatically recovers:
+
+```text
+Maximum HP / 5
+```
+
+This recovery happens between levels, except after the final level.
+
+## ☠️ Game Over Conditions
+
+The game ends when:
+
+- The player chooses the wrong move.
+- The player's HP reaches zero during an enemy attack.
+
+A wrong move triggers the game's **Critical Hit** system and immediately kills the player.
+
+## 🏆 Victory
+
+To win the game, the player must successfully clear all four levels:
+
+```text
+Level 1 → Goblin
+Level 2 → Orc
+Level 3 → Minotaur
+Level 4 → Dragon
+```
+
+After defeating the Dragon, the game displays a victory message and confirms that the player conquered the Dark Arena.
+
+## 📚 Purpose of the Project
+
+This project was developed as an OOP-based C++ game to demonstrate practical implementation of:
+
+- Classes and objects
+- Inheritance
+- Polymorphism
+- Encapsulation
+- Abstraction
+- Virtual functions
+- Smart pointers
+- STL vectors
+- Conditional logic
+- Loops
+- Functions
+- Console input/output
+
+## 👨‍💻 Author
+
+**C++ OOP Project — The Dark Arena**
+
+---
+
+⭐ If you enjoyed the project, consider giving the repository a star!
