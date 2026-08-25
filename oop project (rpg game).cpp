@@ -8,7 +8,7 @@ using namespace std;
 
 
 // ================================================================
-// CHARACTER BASE CLASS
+// CHARACTER
 // ================================================================
 class Character
 {
@@ -16,33 +16,34 @@ protected:
     string name;
     int health;
     int maxHealth;
-    int attackPower;
 
 public:
 
-    Character(const string& n, int hp, int atk)
-        : name(n), health(hp), maxHealth(hp), attackPower(atk)
+    Character(string n, int hp)
     {
+        name = n;
+        health = hp;
+        maxHealth = hp;
     }
 
     virtual ~Character() {}
 
-    string getName() const
+    string getName()
     {
         return name;
     }
 
-    int getHealth() const
+    int getHealth()
     {
         return health;
     }
 
-    int getMaxHealth() const
+    int getMaxHealth()
     {
         return maxHealth;
     }
 
-    bool isAlive() const
+    bool isAlive()
     {
         return health > 0;
     }
@@ -62,9 +63,6 @@ public:
         if (health > maxHealth)
             health = maxHealth;
     }
-
-    virtual int basicAttack() = 0;
-    virtual int finalAttack() = 0;
 };
 
 
@@ -75,51 +73,41 @@ class Player : public Character
 {
 protected:
 
+    int basicDamage;
+    int finalDamage;
+    int healAmount;
+
     bool finalUnlocked;
     bool healUnlocked;
 
     string basicAttackName;
     string finalAttackName;
 
-    int healAmount;
-
 public:
 
-    Player(const string& n,
-           int hp,
-           int atk,
-           const string& basicName,
-           const string& finalName,
-           int healValue)
-
-        : Character(n, hp, atk),
-          finalUnlocked(false),
-          healUnlocked(false),
-          basicAttackName(basicName),
-          finalAttackName(finalName),
-          healAmount(healValue)
+    Player(
+        string n,
+        int hp,
+        int basic,
+        int finalAtk,
+        int heal,
+        string basicName,
+        string finalName
+    )
+        : Character(n, hp)
     {
+        basicDamage = basic;
+        finalDamage = finalAtk;
+        healAmount = heal;
+
+        finalUnlocked = false;
+        healUnlocked = false;
+
+        basicAttackName = basicName;
+        finalAttackName = finalName;
     }
 
-    virtual string getRoleName() const = 0;
-
-
-    // ============================================================
-    // CHECK FINAL
-    // ============================================================
-    bool isFinalUnlocked() const
-    {
-        return finalUnlocked;
-    }
-
-
-    // ============================================================
-    // CHECK HEAL
-    // ============================================================
-    bool isHealUnlocked() const
-    {
-        return healUnlocked;
-    }
+    virtual string getRole() = 0;
 
 
     // ============================================================
@@ -135,9 +123,9 @@ public:
     // ============================================================
     // BASIC ATTACK
     //
-    // Basic unlocks BOTH Final and Heal.
+    // Basic unlocks Final + Heal
     // ============================================================
-    int basicAttack() override
+    int basicAttack()
     {
         finalUnlocked = true;
         healUnlocked = true;
@@ -150,7 +138,7 @@ public:
              << endl;
 
         cout << "Damage: "
-             << attackPower
+             << basicDamage
              << endl;
 
         cout << "FINAL ATTACK UNLOCKED!"
@@ -159,30 +147,23 @@ public:
         cout << "HEAL UNLOCKED!"
              << endl;
 
-        return attackPower;
+        return basicDamage;
     }
 
 
     // ============================================================
     // FINAL ATTACK
     //
-    // Requires Basic Attack.
-    //
-    // After Final:
-    // Final = locked
-    // Heal = locked
+    // Final locks BOTH Final and Heal.
     // ============================================================
-    int finalAttack() override
+    int finalAttack()
     {
         if (!finalUnlocked)
         {
             cout << "\nFINAL ATTACK IS LOCKED!"
                  << endl;
 
-            cout << "Use BASIC ATTACK first."
-                 << endl;
-
-            return 0;
+            return -1;
         }
 
         finalUnlocked = false;
@@ -190,32 +171,36 @@ public:
 
         cout << "\n";
         cout << name
-             << " unleashes "
+             << " uses "
              << finalAttackName
              << "!"
              << endl;
 
-        return attackPower * 2;
+        cout << "FINAL DAMAGE: "
+             << finalDamage
+             << endl;
+
+        cout << "FINAL ATTACK LOCKED!"
+             << endl;
+
+        cout << "HEAL LOCKED!"
+             << endl;
+
+        return finalDamage;
     }
 
 
     // ============================================================
     // HEAL
     //
-    // Requires Basic Attack.
-    //
-    // After Heal:
-    // Heal = locked
-    // Final = remains available
+    // Heal locks itself.
+    // Final remains available.
     // ============================================================
     bool useHeal()
     {
         if (!healUnlocked)
         {
             cout << "\nHEAL IS LOCKED!"
-                 << endl;
-
-            cout << "Use BASIC ATTACK first."
                  << endl;
 
             return false;
@@ -227,8 +212,7 @@ public:
 
         heal(healAmount);
 
-        int recovered =
-            health - oldHealth;
+        int recovered = health - oldHealth;
 
         cout << "\n";
         cout << name
@@ -240,10 +224,7 @@ public:
              << " HP"
              << endl;
 
-        cout << "HP: "
-             << health
-             << "/"
-             << maxHealth
+        cout << "HEAL IS NOW LOCKED."
              << endl;
 
         return true;
@@ -251,24 +232,27 @@ public:
 
 
     // ============================================================
-    // SHOW PLAYER STATUS
+    // STATUS
     // ============================================================
-    void showStatus() const
+    void showStatus()
     {
         cout << "\n";
-        cout << "--------------------------------------------"
+        cout << "----------------------------------------"
              << endl;
 
         cout << name
              << " ["
-             << getRoleName()
+             << getRole()
              << "]"
              << endl;
 
         cout << "HP: "
              << health
-             << "/"
+             << " / "
              << maxHealth
+             << endl;
+
+        cout << "Basic Attack: READY"
              << endl;
 
         cout << "Final Attack: ";
@@ -289,8 +273,19 @@ public:
 
         cout << endl;
 
-        cout << "--------------------------------------------"
+        cout << "----------------------------------------"
              << endl;
+    }
+
+
+    bool isFinalUnlocked()
+    {
+        return finalUnlocked;
+    }
+
+    bool isHealUnlocked()
+    {
+        return healUnlocked;
     }
 };
 
@@ -302,43 +297,22 @@ class Warrior : public Player
 {
 public:
 
-    Warrior(const string& n)
+    Warrior(string n)
         : Player(
             n,
-            700,
-            40,
+            700,              // HP
+            40,               // Basic
+            120,              // Final
+            100,              // Heal
             "Sword Slash",
-            "Berserker's Wrath",
-            100
+            "Berserker's Wrath"
         )
     {
     }
 
-    string getRoleName() const override
+    string getRole()
     {
         return "Warrior";
-    }
-
-
-    int finalAttack() override
-    {
-        if (!finalUnlocked)
-        {
-            cout << "\nFINAL ATTACK IS LOCKED!"
-                 << endl;
-
-            return 0;
-        }
-
-        finalUnlocked = false;
-        healUnlocked = false;
-
-        cout << "\n";
-        cout << name
-             << " unleashes BERSERKER'S WRATH!"
-             << endl;
-
-        return 120;
     }
 };
 
@@ -350,70 +324,51 @@ class Mage : public Player
 {
 public:
 
-    Mage(const string& n)
+    Mage(string n)
         : Player(
             n,
-            400,
-            55,
+            400,              // HP
+            55,               // Basic
+            220,              // Final
+            100,              // Heal
             "Arcane Bolt",
-            "Meteor Storm",
-            100
+            "Meteor Storm"
         )
     {
     }
 
-    string getRoleName() const override
+    string getRole()
     {
         return "Mage";
-    }
-
-
-    int finalAttack() override
-    {
-        if (!finalUnlocked)
-        {
-            cout << "\nFINAL ATTACK IS LOCKED!"
-                 << endl;
-
-            return 0;
-        }
-
-        finalUnlocked = false;
-        healUnlocked = false;
-
-        cout << "\n";
-        cout << name
-             << " summons METEOR STORM!"
-             << endl;
-
-        return 220;
     }
 };
 
 
 // ================================================================
-// ENEMY BASE CLASS
+// ENEMY
 // ================================================================
 class Enemy : public Character
 {
-protected:
-
+private:
+    int attackDamage;
     string attackName;
 
 public:
 
-    Enemy(const string& n,
-          int hp,
-          int atk,
-          const string& attack)
-
-        : Character(n, hp, atk),
-          attackName(attack)
+    Enemy(
+        string n,
+        int hp,
+        int damage,
+        string attack
+    )
+        : Character(n, hp)
     {
+        attackDamage = damage;
+        attackName = attack;
     }
 
 
-    int basicAttack() override
+    int attack(Player& player)
     {
         cout << "\n";
         cout << name
@@ -422,92 +377,27 @@ public:
              << "!"
              << endl;
 
-        return attackPower;
+        player.takeDamage(attackDamage);
+
+        cout << player.getName()
+             << " takes "
+             << attackDamage
+             << " damage."
+             << endl;
+
+        return attackDamage;
     }
 
 
-    int finalAttack() override
-    {
-        return attackPower * 2;
-    }
-
-
-    void showStatus() const
+    void showStatus()
     {
         cout << "\n";
         cout << name
              << " HP: "
              << health
-             << "/"
+             << " / "
              << maxHealth
              << endl;
-    }
-};
-
-
-// ================================================================
-// ENEMIES
-// ================================================================
-class Goblin : public Enemy
-{
-public:
-
-    Goblin(int hp)
-        : Enemy(
-            "Goblin",
-            hp,
-            25,
-            "Claw Swipe"
-        )
-    {
-    }
-};
-
-
-class Orc : public Enemy
-{
-public:
-
-    Orc(int hp)
-        : Enemy(
-            "Orc",
-            hp,
-            35,
-            "Club Smash"
-        )
-    {
-    }
-};
-
-
-class Minotaur : public Enemy
-{
-public:
-
-    Minotaur(int hp)
-        : Enemy(
-            "Minotaur",
-            hp,
-            45,
-            "Horn Charge"
-        )
-    {
-    }
-};
-
-
-class Dragon : public Enemy
-{
-public:
-
-    Dragon(int hp)
-        : Enemy(
-            "Dragon",
-            hp,
-            60,
-            "Flame Breath"
-        )
-    {
     }
 };
 
@@ -519,166 +409,337 @@ class Arena
 {
 private:
 
-    vector<unique_ptr<Enemy> > enemies;
+    vector<unique_ptr<Enemy>> enemies;
 
 
     // ============================================================
-    // BASIC DAMAGE
-    // ============================================================
-    int getBasicDamage(Player& player)
-    {
-        if (player.getRoleName() == "Warrior")
-            return 40;
-
-        if (player.getRoleName() == "Mage")
-            return 55;
-
-        return 0;
-    }
-
-
-    // ============================================================
-    // FINAL DAMAGE
-    // ============================================================
-    int getFinalDamage(Player& player)
-    {
-        if (player.getRoleName() == "Warrior")
-            return 120;
-
-        if (player.getRoleName() == "Mage")
-            return 220;
-
-        return 0;
-    }
-
-
-    // ============================================================
-    // BUILD ENEMIES
+    // GET PATTERN
     //
-    // The HP is calculated so the complete pattern is required.
+    // B = Basic
+    // H = Heal
+    // F = Final
+    //
+    // These patterns are hidden from the player.
     // ============================================================
-    void buildLevels(Player& player)
+    vector<char> getPattern(
+        Player& player,
+        int level
+    )
     {
-        int B = getBasicDamage(player);
-        int F = getFinalDamage(player);
+        vector<char> pattern;
 
 
-        /*
-        ============================================================
-        WARRIOR PATTERNS
-
-        Goblin:
-        B -> F -> B -> H -> F
-
-        Orc:
-        B -> H -> B -> F -> B -> F
-
-        Minotaur:
-        B -> F -> H -> B -> F -> B -> H -> F
-
-        Dragon:
-        B -> F -> B -> H -> F -> B -> F -> H -> B -> F
-
-
-        MAGE PATTERNS
-
-        Goblin:
-        B -> H -> F
-
-        Orc:
-        B -> F -> H -> B -> H -> F
-
-        Minotaur:
-        B -> H -> F -> B -> H -> B -> F -> H -> F
-
-        Dragon:
-        B -> H -> B -> F -> H -> B
-        -> H -> F -> B -> H -> F
-        ============================================================
-        */
-
-
-        // --------------------------------------------------------
-        // HP values
-        // --------------------------------------------------------
-
-        if (player.getRoleName() == "Warrior")
+        // ========================================================
+        // WARRIOR
+        // ========================================================
+        if (player.getRole() == "Warrior")
         {
-            // Goblin:
-            // B + F + B + F
+            if (level == 1)
+            {
+                // Goblin
+                pattern = {
+                    'B',
+                    'F',
+                    'B',
+                    'H',
+                    'F'
+                };
+            }
+
+            else if (level == 2)
+            {
+                // Orc
+                pattern = {
+                    'B',
+                    'H',
+                    'F',
+                    'B',
+                    'F'
+                };
+            }
+
+            else if (level == 3)
+            {
+                // Minotaur
+                pattern = {
+                    'B',
+                    'F',
+                    'B',
+                    'H',
+                    'F',
+                    'B',
+                    'H',
+                    'F'
+                };
+            }
+
+            else
+            {
+                // Dragon
+                pattern = {
+                    'B',
+                    'H',
+                    'F',
+                    'B',
+                    'F',
+                    'B',
+                    'H',
+                    'F',
+                    'B',
+                    'F'
+                };
+            }
+        }
+
+
+        // ========================================================
+        // MAGE
+        // ========================================================
+        else
+        {
+            if (level == 1)
+            {
+                // Goblin
+                pattern = {
+                    'B',
+                    'H',
+                    'F'
+                };
+            }
+
+            else if (level == 2)
+            {
+                // Orc
+                pattern = {
+                    'B',
+                    'F',
+                    'B',
+                    'H',
+                    'F'
+                };
+            }
+
+            else if (level == 3)
+            {
+                // Minotaur
+                pattern = {
+                    'B',
+                    'H',
+                    'B',
+                    'F',
+                    'B',
+                    'H',
+                    'F'
+                };
+            }
+
+            else
+            {
+                // Dragon
+                pattern = {
+                    'B',
+                    'H',
+                    'F',
+                    'B',
+                    'H',
+                    'B',
+                    'F',
+                    'B',
+                    'H',
+                    'F'
+                };
+            }
+        }
+
+        return pattern;
+    }
+
+
+    // ============================================================
+    // CREATE ENEMIES
+    //
+    // Enemy HP is calculated from the pattern.
+    // Therefore the FINAL attack defeats the enemy exactly.
+    // ============================================================
+    void createEnemies(Player& player)
+    {
+        vector<char> pattern;
+
+
+        // ========================================================
+        // WARRIOR
+        // ========================================================
+        if (player.getRole() == "Warrior")
+        {
+            // -----------------------------
+            // GOBLIN
+            // B F B H F
+            //
+            // 2 Basic + 2 Final
+            // = 80 + 240
+            // = 320
+            // -----------------------------
+
             enemies.push_back(
                 unique_ptr<Enemy>(
-                    new Goblin(2 * B + 2 * F)
+                    new Enemy(
+                        "Goblin",
+                        320,
+                        25,
+                        "Claw Swipe"
+                    )
                 )
             );
 
 
-            // Orc:
-            // B + B + F + B + F
+            // -----------------------------
+            // ORC
+            // B H F B F
+            //
+            // 2 Basic + 2 Final
+            // = 320
+            // -----------------------------
+
             enemies.push_back(
                 unique_ptr<Enemy>(
-                    new Orc(3 * B + 2 * F)
+                    new Enemy(
+                        "Orc",
+                        320,
+                        30,
+                        "Club Smash"
+                    )
                 )
             );
 
 
-            // Minotaur:
-            // B + B + F + B + F + B + F
+            // -----------------------------
+            // MINOTAUR
+            // B F B H F B H F
+            //
+            // 3 Basic + 3 Final
+            // = 120 + 360
+            // = 480
+            // -----------------------------
+
             enemies.push_back(
                 unique_ptr<Enemy>(
-                    new Minotaur(4 * B + 3 * F)
+                    new Enemy(
+                        "Minotaur",
+                        480,
+                        35,
+                        "Horn Charge"
+                    )
                 )
             );
 
 
-            // Dragon:
-            // B + B + B + F + B + F + B + F
+            // -----------------------------
+            // DRAGON
+            // B H F B F B H F B F
+            //
+            // 4 Basic + 4 Final
+            // = 160 + 480
+            // = 640
+            // -----------------------------
+
             enemies.push_back(
                 unique_ptr<Enemy>(
-                    new Dragon(5 * B + 3 * F)
+                    new Enemy(
+                        "Dragon",
+                        640,
+                        40,
+                        "Flame Breath"
+                    )
                 )
             );
         }
 
 
+        // ========================================================
+        // MAGE
+        // ========================================================
         else
         {
-            // ----------------------------------------------------
-            // MAGE
-            // ----------------------------------------------------
+            // -----------------------------
+            // GOBLIN
+            // B H F
+            //
+            // 1 Basic + 1 Final
+            // = 55 + 220
+            // = 275
+            // -----------------------------
 
-            // Goblin:
-            // B + F
             enemies.push_back(
                 unique_ptr<Enemy>(
-                    new Goblin(B + F)
+                    new Enemy(
+                        "Goblin",
+                        275,
+                        20,
+                        "Claw Swipe"
+                    )
                 )
             );
 
 
-            // Orc:
-            // B + F + B + F
+            // -----------------------------
+            // ORC
+            // B F B H F
+            //
+            // 2 Basic + 2 Final
+            // = 110 + 440
+            // = 550
+            // -----------------------------
+
             enemies.push_back(
                 unique_ptr<Enemy>(
-                    new Orc(2 * B + 2 * F)
+                    new Enemy(
+                        "Orc",
+                        550,
+                        25,
+                        "Club Smash"
+                    )
                 )
             );
 
 
-            // Minotaur:
-            // B + F + B + B + F + F
+            // -----------------------------
+            // MINOTAUR
+            // B H B F B H F
+            //
+            // 3 Basic + 2 Final
+            // = 165 + 440
+            // = 605
+            // -----------------------------
+
             enemies.push_back(
                 unique_ptr<Enemy>(
-                    new Minotaur(3 * B + 3 * F)
+                    new Enemy(
+                        "Minotaur",
+                        605,
+                        30,
+                        "Horn Charge"
+                    )
                 )
             );
 
 
-            // Dragon:
-            // B + B + F + B + F + B + F
+            // -----------------------------
+            // DRAGON
+            // B H F B H B F B H F
+            //
+            // 4 Basic + 3 Final
+            // = 220 + 660
+            // = 880
+            // -----------------------------
+
             enemies.push_back(
                 unique_ptr<Enemy>(
-                    new Dragon(4 * B + 3 * F)
+                    new Enemy(
+                        "Dragon",
+                        880,
+                        30,
+                        "Flame Breath"
+                    )
                 )
             );
         }
@@ -711,257 +772,48 @@ private:
 
 
     // ============================================================
-    // GET REQUIRED MOVE
-    //
-    // IMPORTANT:
-    // This is NEVER displayed to the player.
-    // ============================================================
-    char getRequiredMove(
-        Player& player,
-        int level,
-        int step
-    )
-    {
-        vector<char> pattern;
-
-
-        // ========================================================
-        // WARRIOR PATTERNS
-        // ========================================================
-        if (player.getRoleName() == "Warrior")
-        {
-            if (level == 1)
-            {
-                // Goblin
-                pattern = {
-                    'B',
-                    'F',
-                    'B',
-                    'H',
-                    'F'
-                };
-            }
-
-            else if (level == 2)
-            {
-                // Orc
-                pattern = {
-                    'B',
-                    'H',
-                    'B',
-                    'F',
-                    'B',
-                    'F'
-                };
-            }
-
-            else if (level == 3)
-            {
-                // Minotaur
-                pattern = {
-                    'B',
-                    'F',
-                    'H',
-                    'B',
-                    'F',
-                    'B',
-                    'H',
-                    'F'
-                };
-            }
-
-            else
-            {
-                // Dragon
-                pattern = {
-                    'B',
-                    'F',
-                    'B',
-                    'H',
-                    'F',
-                    'B',
-                    'F',
-                    'H',
-                    'B',
-                    'F'
-                };
-            }
-        }
-
-
-        // ========================================================
-        // MAGE PATTERNS
-        // ========================================================
-        else
-        {
-            if (level == 1)
-            {
-                // Goblin
-                pattern = {
-                    'B',
-                    'H',
-                    'F'
-                };
-            }
-
-            else if (level == 2)
-            {
-                // Orc
-                pattern = {
-                    'B',
-                    'F',
-                    'H',
-                    'B',
-                    'H',
-                    'F'
-                };
-            }
-
-            else if (level == 3)
-            {
-                // Minotaur
-                pattern = {
-                    'B',
-                    'H',
-                    'F',
-                    'B',
-                    'H',
-                    'B',
-                    'F',
-                    'H',
-                    'F'
-                };
-            }
-
-            else
-            {
-                // Dragon
-                pattern = {
-                    'B',
-                    'H',
-                    'B',
-                    'F',
-                    'H',
-                    'B',
-                    'H',
-                    'F',
-                    'B',
-                    'H',
-                    'F'
-                };
-            }
-        }
-
-
-        if (step >= 0 &&
-            step < (int)pattern.size())
-        {
-            return pattern[step];
-        }
-
-
-        return 'B';
-    }
-
-
-    // ============================================================
-    // PATTERN LENGTH
-    // ============================================================
-    int getPatternLength(
-        Player& player,
-        int level
-    )
-    {
-        if (player.getRoleName() == "Warrior")
-        {
-            if (level == 1)
-                return 5;
-
-            if (level == 2)
-                return 6;
-
-            if (level == 3)
-                return 8;
-
-            return 10;
-        }
-
-        else
-        {
-            if (level == 1)
-                return 3;
-
-            if (level == 2)
-                return 6;
-
-            if (level == 3)
-                return 9;
-
-            return 11;
-        }
-    }
-
-
-    // ============================================================
     // WRONG MOVE
     //
     // WRONG MOVE = INSTANT DEATH
     // ============================================================
-    void wrongMove(
+    void criticalHit(
         Player& player,
         Enemy& enemy
     )
     {
         cout << "\n";
-        cout << "============================================================"
+        cout << "=================================================="
              << endl;
 
-        cout << "                    WRONG MOVE!"
+        cout << "                  WRONG MOVE!"
              << endl;
 
-        cout << "============================================================"
+        cout << "=================================================="
              << endl;
-
 
         cout << enemy.getName()
              << " detected your mistake!"
              << endl;
 
-
         cout << "\n";
-        cout << "The enemy prepares a devastating attack..."
+        cout << "The enemy launches a CRITICAL HIT!"
              << endl;
 
         cout << "\n";
-        cout << "                    CRITICAL HIT!"
+        cout << "                CRITICAL HIT!!!"
              << endl;
-
-
-        // Instant kill
-        player.takeDamage(
-            player.getHealth()
-        );
-
 
         cout << "\n";
         cout << player.getName()
              << " has been killed instantly!"
              << endl;
 
+        player.takeDamage(
+            player.getHealth()
+        );
 
         cout << "\n";
-        cout << "============================================================"
-             << endl;
-
-        cout << "                       GAME OVER"
-             << endl;
-
-        cout << "============================================================"
-             << endl;
-
-
-        cout << "\n";
-        cout << "You broke the enemy's attack pattern."
+        cout << "GAME OVER!"
              << endl;
     }
 
@@ -978,57 +830,58 @@ private:
         player.resetAbilities();
 
 
-        int step = 0;
-
-        int patternLength =
-            getPatternLength(
+        vector<char> pattern =
+            getPattern(
                 player,
                 level
             );
 
+
+        int step = 0;
         int turn = 1;
 
 
         cout << "\n";
-        cout << "============================================================"
+        cout << "=================================================="
              << endl;
 
-        cout << "                         LEVEL "
+        cout << "                    LEVEL "
              << level
              << endl;
 
-        cout << "                     ENEMY: "
+        cout << "                 ENEMY: "
              << enemy.getName()
              << endl;
 
-        cout << "============================================================"
+        cout << "=================================================="
              << endl;
 
 
         cout << "\n";
-        cout << "The enemy has entered the arena."
+        cout << "No clues are available."
              << endl;
 
-        cout << "There are NO clues."
-             << endl;
-
-        cout << "Study the enemy's pattern carefully."
+        cout << "Study the enemy and remember the pattern."
              << endl;
 
         cout << "ONE WRONG MOVE = INSTANT DEATH."
              << endl;
 
 
+        // ========================================================
+        // BATTLE LOOP
+        // ========================================================
+
         while (
             player.isAlive() &&
             enemy.isAlive() &&
-            step < patternLength
+            step < (int)pattern.size()
         )
         {
             cout << "\n";
-            cout << "==================== TURN "
+            cout << "================ TURN "
                  << turn
-                 << " ===================="
+                 << " ================"
                  << endl;
 
 
@@ -1045,12 +898,10 @@ private:
             cout << "Choose your action:"
                  << endl;
 
-
-            cout << "1) Basic Attack"
+            cout << "1. Basic Attack"
                  << endl;
 
-
-            cout << "2) Final Attack ";
+            cout << "2. Final Attack ";
 
             if (player.isFinalUnlocked())
                 cout << "[READY]";
@@ -1059,8 +910,7 @@ private:
 
             cout << endl;
 
-
-            cout << "3) Heal ";
+            cout << "3. Heal ";
 
             if (player.isHealUnlocked())
                 cout << "[READY]";
@@ -1097,8 +947,7 @@ private:
 
             else
             {
-                cout << "\n";
-                cout << "Invalid choice."
+                cout << "\nInvalid choice!"
                      << endl;
 
                 continue;
@@ -1106,24 +955,14 @@ private:
 
 
             // ====================================================
-            // GET HIDDEN REQUIRED MOVE
+            // CHECK PATTERN
+            //
+            // Player NEVER sees pattern[step].
             // ====================================================
 
-            char requiredMove =
-                getRequiredMove(
-                    player,
-                    level,
-                    step
-                );
-
-
-            // ====================================================
-            // WRONG MOVE
-            // ====================================================
-
-            if (selectedMove != requiredMove)
+            if (selectedMove != pattern[step])
             {
-                wrongMove(
+                criticalHit(
                     player,
                     enemy
                 );
@@ -1133,7 +972,7 @@ private:
 
 
             // ====================================================
-            // BASIC ATTACK
+            // BASIC
             // ====================================================
 
             if (selectedMove == 'B')
@@ -1141,25 +980,15 @@ private:
                 int damage =
                     player.basicAttack();
 
-
                 enemy.takeDamage(damage);
 
-
-                cout << "\n";
-                cout << "CORRECT MOVE!"
-                     << endl;
-
-
-                cout << enemy.getName()
-                     << " takes "
-                     << damage
-                     << " damage."
+                cout << "\nCORRECT MOVE!"
                      << endl;
             }
 
 
             // ====================================================
-            // FINAL ATTACK
+            // FINAL
             // ====================================================
 
             else if (selectedMove == 'F')
@@ -1167,25 +996,11 @@ private:
                 int damage =
                     player.finalAttack();
 
-
                 if (damage > 0)
                 {
                     enemy.takeDamage(damage);
 
-
-                    cout << "\n";
-                    cout << "CORRECT MOVE!"
-                         << endl;
-
-
-                    cout << "FINAL ATTACK!"
-                         << endl;
-
-
-                    cout << enemy.getName()
-                         << " takes "
-                         << damage
-                         << " damage."
+                    cout << "\nCORRECT MOVE!"
                          << endl;
                 }
             }
@@ -1200,33 +1015,30 @@ private:
                 bool success =
                     player.useHeal();
 
-
                 if (!success)
                 {
-                    continue;
+                    return;
                 }
 
-
-                cout << "\n";
-                cout << "CORRECT MOVE!"
+                cout << "\nCORRECT MOVE!"
                      << endl;
             }
 
 
             // ====================================================
-            // CHECK ENEMY DEATH
+            // CHECK ENEMY
             // ====================================================
 
             if (!enemy.isAlive())
             {
                 cout << "\n";
-                cout << "============================================================"
+                cout << "=================================================="
                      << endl;
 
-                cout << "                    ENEMY DEFEATED!"
+                cout << "               ENEMY DEFEATED!"
                      << endl;
 
-                cout << "============================================================"
+                cout << "=================================================="
                      << endl;
 
                 return;
@@ -1234,42 +1046,24 @@ private:
 
 
             // ====================================================
-            // ENEMY NORMAL ATTACK
+            // ENEMY ATTACK
             //
-            // A correct move does NOT kill the player.
+            // Only occurs after a correct move.
             // ====================================================
 
-            int enemyDamage =
-                enemy.basicAttack();
+            enemy.attack(player);
 
-
-            player.takeDamage(
-                enemyDamage
-            );
-
-
-            cout << "-> "
-                 << player.getName()
-                 << " takes "
-                 << enemyDamage
-                 << " damage."
-                 << endl;
-
-
-            // ====================================================
-            // CHECK PLAYER DEATH
-            // ====================================================
 
             if (!player.isAlive())
             {
                 cout << "\n";
-                cout << "============================================================"
+                cout << "=================================================="
                      << endl;
 
-                cout << "                       GAME OVER"
+                cout << "                    GAME OVER"
                      << endl;
 
-                cout << "============================================================"
+                cout << "=================================================="
                      << endl;
 
                 return;
@@ -1278,8 +1072,6 @@ private:
 
             // ====================================================
             // ADVANCE PATTERN
-            //
-            // ONLY CORRECT MOVES ADVANCE THE PATTERN.
             // ====================================================
 
             step++;
@@ -1289,19 +1081,15 @@ private:
 
 
         // ========================================================
-        // LEVEL COMPLETED
+        // LEVEL COMPLETE
         // ========================================================
 
         if (!enemy.isAlive())
         {
             cout << "\n";
-            cout << "============================================================"
-                 << endl;
-
-            cout << "                    LEVEL CLEARED!"
-                 << endl;
-
-            cout << "============================================================"
+            cout << "LEVEL "
+                 << level
+                 << " CLEARED!"
                  << endl;
         }
     }
@@ -1313,78 +1101,63 @@ private:
     unique_ptr<Player> choosePlayer()
     {
         cout << "\n";
-        cout << "============================================================"
+        cout << "=================================================="
              << endl;
 
-        cout << "                    CHOOSE YOUR CLASS"
+        cout << "               CHOOSE YOUR ROLE"
              << endl;
 
-        cout << "============================================================"
+        cout << "=================================================="
              << endl;
 
-
-        // ========================================================
-        // WARRIOR
-        // ========================================================
 
         cout << "\n";
-        cout << "1) WARRIOR"
+        cout << "1. WARRIOR"
              << endl;
 
         cout << "   HP: 700"
              << endl;
 
-        cout << "   Basic Attack: 40"
+        cout << "   Basic: 40"
              << endl;
 
-        cout << "   Final Attack: 120"
+        cout << "   Final: 120"
              << endl;
 
         cout << "   Heal: 100"
              << endl;
 
 
-        // ========================================================
-        // MAGE
-        // ========================================================
-
         cout << "\n";
-        cout << "2) MAGE"
+        cout << "2. MAGE"
              << endl;
 
         cout << "   HP: 400"
              << endl;
 
-        cout << "   Basic Attack: 55"
+        cout << "   Basic: 55"
              << endl;
 
-        cout << "   Final Attack: 220"
+        cout << "   Final: 220"
              << endl;
 
         cout << "   Heal: 100"
              << endl;
 
 
-        cout << "\n";
-        cout << "Choose your class: ";
+        cout << "\nChoose: ";
 
 
         int choice =
             getChoice();
 
 
-        cout << "\n";
-        cout << "Enter your character name: ";
-
+        cout << "\nEnter your name: ";
 
         string playerName;
 
         cin >> playerName;
 
-
-        // ========================================================
-        // CREATE WARRIOR
-        // ========================================================
 
         if (choice == 1)
         {
@@ -1393,11 +1166,6 @@ private:
             );
         }
 
-
-        // ========================================================
-        // CREATE MAGE
-        // ========================================================
-
         else if (choice == 2)
         {
             return unique_ptr<Player>(
@@ -1405,20 +1173,13 @@ private:
             );
         }
 
-
-        // ========================================================
-        // INVALID
-        // ========================================================
-
         else
         {
-            cout << "\n";
             cout << "Invalid choice."
                  << endl;
 
-            cout << "Warrior selected by default."
+            cout << "Warrior selected."
                  << endl;
-
 
             return unique_ptr<Player>(
                 new Warrior(playerName)
@@ -1435,21 +1196,20 @@ public:
     void start()
     {
         cout << "\n";
-        cout << "============================================================"
+        cout << "=================================================="
              << endl;
 
-        cout << "                  THE DARK ARENA"
+        cout << "                 THE DARK ARENA"
              << endl;
 
-        cout << "============================================================"
+        cout << "=================================================="
              << endl;
 
 
-        cout << "\n";
-        cout << "RULES"
+        cout << "\nRULES"
              << endl;
 
-        cout << "------------------------------------------------------------"
+        cout << "-----------------------------------------------"
              << endl;
 
         cout << "1. Choose Warrior or Mage."
@@ -1458,42 +1218,39 @@ public:
         cout << "2. Basic Attack is always available."
              << endl;
 
-        cout << "3. Basic Attack unlocks Final Attack."
+        cout << "3. Basic Attack unlocks Final Attack and Heal."
              << endl;
 
-        cout << "4. Basic Attack unlocks Heal."
+        cout << "4. Heal becomes locked after being used."
              << endl;
 
-        cout << "5. Heal can only be used after Basic Attack."
+        cout << "5. Final Attack locks both Final and Heal."
              << endl;
 
-        cout << "6. Final Attack can only be used after Basic Attack."
+        cout << "6. After Final Attack, Basic Attack must come next."
              << endl;
 
         cout << "7. There are NO clues."
              << endl;
 
-        cout << "8. Every enemy has a fixed attack pattern."
+        cout << "8. Warrior and Mage have different patterns."
              << endl;
 
-        cout << "9. Warrior and Mage have DIFFERENT patterns."
+        cout << "9. Wrong move = CRITICAL HIT."
              << endl;
 
-        cout << "10. Wrong move = CRITICAL HIT."
+        cout << "10. Critical Hit = INSTANT DEATH."
              << endl;
 
-        cout << "11. Critical Hit = INSTANT DEATH."
+        cout << "11. Follow the complete pattern to defeat the enemy."
              << endl;
 
-        cout << "12. You must follow the entire pattern to win."
-             << endl;
-
-        cout << "------------------------------------------------------------"
+        cout << "-----------------------------------------------"
              << endl;
 
 
         // ========================================================
-        // CHOOSE PLAYER
+        // SELECT PLAYER
         // ========================================================
 
         unique_ptr<Player> player =
@@ -1501,33 +1258,26 @@ public:
 
 
         // ========================================================
-        // CREATE LEVELS
+        // CREATE ENEMIES
         // ========================================================
 
-        buildLevels(*player);
-
-
-        int level = 1;
+        createEnemies(*player);
 
 
         // ========================================================
-        // BATTLE EACH LEVEL
+        // FOUR LEVELS
         // ========================================================
 
-        for (size_t i = 0;
-             i < enemies.size();
-             i++)
+        for (int level = 1;
+             level <= 4;
+             level++)
         {
             battle(
                 *player,
-                *enemies[i],
+                *enemies[level - 1],
                 level
             );
 
-
-            // ----------------------------------------------------
-            // PLAYER DEAD
-            // ----------------------------------------------------
 
             if (!player->isAlive())
             {
@@ -1535,22 +1285,18 @@ public:
             }
 
 
-            // ----------------------------------------------------
-            // RECOVERY BETWEEN LEVELS
-            // ----------------------------------------------------
+            // ====================================================
+            // HEAL BETWEEN LEVELS
+            // ====================================================
 
             if (level < 4)
             {
-                int recovery =
-                    player->getMaxHealth() / 5;
-
-
                 int oldHealth =
                     player->getHealth();
 
 
                 player->heal(
-                    recovery
+                    player->getMaxHealth() / 5
                 );
 
 
@@ -1562,43 +1308,29 @@ public:
                 cout << "\n";
                 cout << "You recover "
                      << recovered
-                     << " HP before the next level."
+                     << " HP before the next battle."
                      << endl;
             }
-
-
-            level++;
         }
 
 
         // ========================================================
-        // FINAL VICTORY
+        // VICTORY
         // ========================================================
 
         cout << "\n";
-        cout << "============================================================"
+        cout << "=================================================="
              << endl;
 
-        cout << "                       VICTORY!"
+        cout << "                    VICTORY!"
              << endl;
 
-        cout << "============================================================"
+        cout << "=================================================="
              << endl;
-
 
         cout << "\n";
         cout << player->getName()
-             << " has conquered the DARK ARENA!"
-             << endl;
-
-
-        cout << "\n";
-        cout << "All four enemies have been defeated."
-             << endl;
-
-
-        cout << "\n";
-        cout << "============================================================"
+             << " conquered the Dark Arena!"
              << endl;
     }
 };
